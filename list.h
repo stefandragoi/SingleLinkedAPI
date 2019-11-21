@@ -13,17 +13,17 @@
 
 void print_element(int);
 
-struct node {
-	struct node* next;
+typedef struct node {
+	struct node *next;
 	void (*callback_print)(int);
 	int value;
 
-};
+} node_t;
 
-struct node* create_node(int);
+node_t* create_node(int);
 
-void add_node(struct node**, pthread_mutex_t* mutex, int);
-void delete_node(struct node **head, pthread_mutex_t* mutex, int);
-void print_list(struct node**, pthread_mutex_t* mutex);
-void sort_list(struct node** head, pthread_mutex_t* mutex);
-void flush_list(struct node** head, pthread_mutex_t* mutex);
+int add_node(int, node_t**, pthread_mutex_t* mutex, int);
+int delete_node(int, node_t**, pthread_mutex_t* mutex, int);
+int print_list(int, node_t**, pthread_mutex_t* mutex);
+int sort_list(int, node_t**, pthread_mutex_t* mutex);
+int flush_list(int, node_t**, pthread_mutex_t* mutex);

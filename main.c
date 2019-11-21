@@ -6,70 +6,77 @@
  */
 #include "list.h"
 
+typedef struct {
+	int id;
+} thread_info_t;
+
 pthread_mutex_t mutex;
-struct node *head;
+pthread_barrier_t barrier;
 
-void* thread1_job(void *arg) {
-	pthread_barrier_t *barrier;
-	barrier = (pthread_barrier_t*) arg;
-	pthread_barrier_wait(barrier);
+node_t *head;
 
-	add_node(&head, &mutex, 2);
-	add_node(&head, &mutex, 10);
-	add_node(&head, &mutex, 4);
-	delete_node(&head, &mutex, 2);
-	sort_list(&head, &mutex);
-	delete_node(&head, &mutex, 10);
-	delete_node(&head, &mutex, 5);
+void* thread_job(void *arg) {
+	int id;
+	thread_info_t* t_info;
+	t_info = (thread_info_t*)arg;
 
-	return NULL;
-}
+	id = t_info->id;
 
-void* thread2_job(void *arg) {
-	pthread_barrier_t *barrier;
-	barrier = (pthread_barrier_t*) arg;
-	pthread_barrier_wait(barrier);
+	pthread_barrier_wait(&barrier);
 
-	add_node(&head, &mutex, 11);
-	add_node(&head, &mutex, 1);
-	delete_node(&head, &mutex, 11);
-	add_node(&head, &mutex, 8);
-	print_list(&head, &mutex);
-
-	return NULL;
-}
-
-void* thread3_job(void *arg) {
-	pthread_barrier_t *barrier;
-	barrier = (pthread_barrier_t*) arg;
-	pthread_barrier_wait(barrier);
-
-	add_node(&head, &mutex, 30);
-	add_node(&head, &mutex, 25);
-	add_node(&head, &mutex, 100);
-	sort_list(&head, &mutex);
-	print_list(&head, &mutex);
-	delete_node(&head, &mutex, 100);
+	switch(id) {
+	case 0:
+		add_node(id, &head, &mutex, 2);
+		add_node(id, &head, &mutex, 10);
+		add_node(id, &head, &mutex, 4);
+		delete_node(id, &head, &mutex, 2);
+		sort_list(id, &head, &mutex);
+		delete_node(id, &head, &mutex, 10);
+		delete_node(id, &head, &mutex, 5);
+	break;
+	case 1:
+		add_node(id, &head, &mutex, 11);
+		add_node(id, &head, &mutex, 1);
+		delete_node(id, &head, &mutex, 11);
+		add_node(id, &head, &mutex, 8);
+		print_list(id, &head, &mutex);
+	break;
+	case 2:
+		add_node(id, &head, &mutex, 30);
+		add_node(id, &head, &mutex, 25);
+		add_node(id, &head, &mutex, 100);
+		sort_list(id, &head, &mutex);
+		print_list(id, &head, &mutex);
+		delete_node(id, &head, &mutex, 100);
+	break;
+	default:
+	break;
+	}
 
 	return NULL;
 }
 
 int main() {
+	int i;
+	thread_info_t t_info[NUM_THREADS];
+	pthread_t threads[NUM_THREADS];
+
 	head = NULL;
-
-	pthread_barrier_t barrier;
 	pthread_barrier_init(&barrier, NULL, NUM_THREADS);
-
     pthread_mutex_init(&mutex, NULL);
 
-	pthread_t thread1, thread2, thread3;
-	pthread_create(&thread1, NULL, &thread1_job, (void*)&barrier);
-	pthread_create(&thread2, NULL, &thread2_job, (void*)&barrier);
-	pthread_create(&thread3, NULL, &thread3_job, (void*)&barrier);
+	for (i = 0; i < NUM_THREADS; i++) {
+		t_info[i].id = i;
+		if (pthread_create(&threads[i], NULL, &thread_job, (void *)&t_info[i])) {
+			printf("Error creating thread number %d\n", i);
+			return 1;
+		}
+	}
 
-	pthread_join(thread1, NULL);
-	pthread_join(thread2, NULL);
-	pthread_join(thread3, NULL);
+	for (i = 0; i < NUM_THREADS; i++) {
+		if (pthread_join(threads[i], NULL))
+			printf("Error joining thread number %d\n", i);
+	}
 
 	pthread_barrier_destroy(&barrier);
 
