@@ -4,22 +4,24 @@
  *  Created on: Nov 20, 2019
  *      Author: sdragoi
  */
-#include "utils.h"
+#include "list.h"
 
 pthread_mutex_t mutex;
+struct node *head;
 
 void* thread1_job(void *arg) {
 	pthread_barrier_t *barrier;
 	barrier = (pthread_barrier_t*) arg;
 	pthread_barrier_wait(barrier);
 
-	add_node(&mutex, 2);
-	add_node(&mutex, 4);
-	add_node(&mutex, 10);
-	delete_node(&mutex, 2);
-	sort_list(&mutex);
-	delete_node(&mutex, 10);
-	delete_node(&mutex, 5);
+	add_node(&head, &mutex, 2);
+	add_node(&head, &mutex, 10);
+	add_node(&head, &mutex, 4);
+	delete_node(&head, &mutex, 2);
+	sort_list(&head, &mutex);
+	delete_node(&head, &mutex, 10);
+	delete_node(&head, &mutex, 5);
+
 	return NULL;
 }
 
@@ -28,11 +30,12 @@ void* thread2_job(void *arg) {
 	barrier = (pthread_barrier_t*) arg;
 	pthread_barrier_wait(barrier);
 
-	add_node(&mutex, 11);
-	add_node(&mutex, 1);
-	delete_node(&mutex, 11);
-	add_node(&mutex, 8);
-	print_list(&mutex);
+	add_node(&head, &mutex, 11);
+	add_node(&head, &mutex, 1);
+	delete_node(&head, &mutex, 11);
+	add_node(&head, &mutex, 8);
+	print_list(&head, &mutex);
+
 	return NULL;
 }
 
@@ -41,19 +44,21 @@ void* thread3_job(void *arg) {
 	barrier = (pthread_barrier_t*) arg;
 	pthread_barrier_wait(barrier);
 
-	add_node(&mutex, 30);
-	add_node(&mutex, 25);
-	add_node(&mutex, 100);
-	sort_list(&mutex);
-	print_list(&mutex);
-	delete_node(&mutex, 100);
-	return NULL;
+	add_node(&head, &mutex, 30);
+	add_node(&head, &mutex, 25);
+	add_node(&head, &mutex, 100);
+	sort_list(&head, &mutex);
+	print_list(&head, &mutex);
+	delete_node(&head, &mutex, 100);
 
+	return NULL;
 }
 
 int main() {
+	head = NULL;
+
 	pthread_barrier_t barrier;
-	pthread_barrier_init(&barrier, NULL, 2);
+	pthread_barrier_init(&barrier, NULL, NUM_THREADS);
 
     pthread_mutex_init(&mutex, NULL);
 
