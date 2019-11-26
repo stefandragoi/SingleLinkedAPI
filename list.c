@@ -14,6 +14,11 @@ node_t* create_node(int data) {
 	node_t* new_node;
 
 	new_node = malloc(sizeof(*new_node));
+	if (NULL == new_node) {
+		printf("Creating new node, malloc failed\n");
+		return NULL;
+	}
+
 	new_node->next = NULL;
 	new_node->callback_print = print_element;
 	new_node->value = data;
@@ -22,23 +27,32 @@ node_t* create_node(int data) {
 }
 
 int add_node(int id, node_t **head, pthread_mutex_t* mutex, int data) {
+	int status;
 	node_t* prev_node;
 	node_t* new_node;
 
-	if (mutex == NULL) {
-		printf("Invalid mutex variable\n");
+	if (NULL == mutex) {
+		printf("Invalid mutex\n");
 		return 0;
 	}
 
-	pthread_mutex_lock(mutex);
+	status = pthread_mutex_lock(mutex);
+	if (status != 0) {
+		printf("Error locking mutex in add function, thread %d\n", id);
+		return 0;
+	}
+
 	prev_node = *head;
 	new_node = create_node(data);
 	if (NULL == new_node) {
-		printf("Thread no. %d tried to add the following element: %d, malloc failed\n", id, data);
+		printf("Thread no. %d tried to add the following element: %d, node created is NULL\n", id, data);
 		pthread_mutex_unlock(mutex);
 		return 0;
 	}
 
+	/* If the head is NULL the new element will be first in the list.
+	 * Other find the end of the list and add it here
+	 */
 	if (NULL == *head) {
 		*head = new_node;
 	} else {
@@ -54,17 +68,27 @@ int add_node(int id, node_t **head, pthread_mutex_t* mutex, int data) {
 }
 
 int delete_node(int id, node_t **head, pthread_mutex_t* mutex, int data) {
+	int status;
 	node_t* current_node;
 	node_t* prev_node;
 
-	if (mutex == NULL) {
+	if (NULL == mutex) {
 		printf("Invalid mutex variable\n");
 		return 0;
 	}
 
-	pthread_mutex_lock(mutex);
+	status = pthread_mutex_lock(mutex);
+	if (status != 0) {
+		printf("Error locking mutex in delete function, thread %d\n", id);
+		return 0;
+	}
+
 	current_node = *head;
 
+	/* If we want to delete first element, head will point to it's next element.
+	 * Else search for the desired element storing previous elements as well and when found,
+	 * create a link between previous and next element.
+	 */
 	if (NULL == current_node) {
 		printf("Thread no. %d tried to delete the following element, list is empty: %d\n", id, data);
 		pthread_mutex_unlock(mutex);
@@ -72,14 +96,17 @@ int delete_node(int id, node_t **head, pthread_mutex_t* mutex, int data) {
 	} else if (data == current_node->value) {
 		*head = current_node->next;
 		free(current_node);
+		current_node = NULL;
 		printf("Thread no. %d deleted the following element: %d\n", id, data);
 		pthread_mutex_unlock(mutex);
 		return 1;
 	} else {
+		prev_node = *head;
 		while (NULL != current_node) {
 			if (data == current_node->value) {
 				prev_node->next = current_node->next;
 				free(current_node);
+				current_node = NULL;
 				printf("Thread no. %d deleted the following element: %d\n", id, data);
 				pthread_mutex_unlock(mutex);
 				return 1;
@@ -95,14 +122,20 @@ int delete_node(int id, node_t **head, pthread_mutex_t* mutex, int data) {
 }
 
 int print_list(int id, node_t** head, pthread_mutex_t* mutex) {
+	int status;
 	node_t* current_node;
 
-	if (mutex == NULL) {
+	if (NULL == mutex) {
 		printf("Invalid mutex variable\n");
 		return 0;
 	}
 
-	pthread_mutex_lock(mutex);
+	status = pthread_mutex_lock(mutex);
+	if (status != 0) {
+		printf("Error locking mutex in print function, thread %d\n", id);
+		return 0;
+	}
+
 	current_node = *head;
 	printf("Thread no. %d is printing the list: ", id);
 
@@ -116,17 +149,23 @@ int print_list(int id, node_t** head, pthread_mutex_t* mutex) {
 }
 
 int sort_list(int id, node_t** head, pthread_mutex_t* mutex) {
-	int count, i;
+	int count, i, status;
 	node_t* aux_node;
 	node_t* node_j;
 	node_t* prev_j;
 
-	if (mutex == NULL) {
+	if (NULL == mutex) {
 		printf("Invalid mutex variable\n");
 		return 0;
 	}
 
-	pthread_mutex_lock(mutex);
+	status = pthread_mutex_lock(mutex);
+	if (status != 0) {
+		printf("Error locking mutex in sort function, thread %d\n", id);
+		return 0;
+	}
+
+	/* Count number of elements in the list */
 	aux_node = *head;
 	count = 0;
 	while(NULL != aux_node) {
@@ -134,13 +173,16 @@ int sort_list(int id, node_t** head, pthread_mutex_t* mutex) {
 		aux_node = aux_node->next;
 	}
 
+	/* Sort using bubble sort technique - loop for (number of element - 1) times */
 	for (i = 0; i < count - 1; i++) {
+		/* node_j is similar to a for loop counter in an array, prev_j is the previous element of node_j */
 		node_j = *head;
 		prev_j = NULL;
 
 		while(NULL != node_j && NULL != node_j->next) {
+			/* Check the values of each two adjacent nodes, swap them if necessary */
 			if (node_j->value > node_j->next->value) {
-				if (prev_j == NULL)
+				if (prev_j == NULL) /* Previous element is NULL, i.e. list head needs to be changed */
 					*head = node_j->next;
 				else
 					prev_j->next = node_j->next;
@@ -161,21 +203,28 @@ int sort_list(int id, node_t** head, pthread_mutex_t* mutex) {
 }
 
 int flush_list(int id, node_t** head, pthread_mutex_t* mutex) {
+	int status;
 	node_t* current_node;
 	node_t* aux_node;
 
-	if (mutex == NULL) {
+	if (NULL == mutex) {
 		printf("Invalid mutex variable\n");
 		return 0;
 	}
 
-	pthread_mutex_lock(mutex);
+	status = pthread_mutex_lock(mutex);
+	if (status != 0) {
+		printf("Error locking mutex in flush function, thread %d\n", id);
+		return 0;
+	}
+
 	current_node = *head;
 	*head = NULL;
 	while(NULL != current_node) {
 		aux_node = current_node;
 		current_node = current_node->next;
 		free(aux_node);
+		aux_node = NULL;
 	}
 
 	printf("Thread no. %d flushed the list\n", id);

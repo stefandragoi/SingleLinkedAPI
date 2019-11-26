@@ -6,10 +6,6 @@
  */
 #include "list.h"
 
-typedef struct {
-	int id;
-} thread_info_t;
-
 pthread_mutex_t mutex;
 pthread_barrier_t barrier;
 
@@ -81,5 +77,6 @@ int main() {
 	pthread_barrier_destroy(&barrier);
 
 	printf("Done!\n");
+	flush_list(0, &head, &mutex);
 	return 0;
 }

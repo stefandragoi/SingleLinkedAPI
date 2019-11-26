@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE 600 /* For barrier usage */
 #define NUM_THREADS 3
 
 void print_element(int);
@@ -19,6 +19,10 @@ typedef struct node {
 	int value;
 
 } node_t;
+
+typedef struct {
+	int id;
+} thread_info_t;
 
 node_t* create_node(int);
 
